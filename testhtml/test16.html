@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        .player-container {
+            width: 640px;
+            background: #000;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        #videoElement {
+            width: 100%;
+            border-radius: 4px;
+        }
+
+        .controls {
+            margin-top: 10px;
+            color: white;
+        }
+
+        .control-button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .progress-container {
+            background: #404040;
+            height: 5px;
+            border-radius: 3px;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: #ff0000;
+            width: 0;
+            border-radius: 3px;
+            transition: width 0.1s linear;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="player"></div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        // 创建播放器容器
+        const player = d3.select("#player")
+            .append("div")
+            .classed("player-container", true);
+
+        // 添加视频元素
+        const video = player.append("video")
+            .attr("id", "videoElement")
+            .attr("controls", false)
+            .attr("preload", "metadata")
+            .on("timeupdate", updateProgress)
+            .node();
+
+        // 设置视频源（替换为你的视频URL）
+        video.src = "your-video-url.mp4";
+
+        // 创建控制面板
+        const controls = player.append("div")
+            .classed("controls", true);
+
+        // 播放/暂停按钮
+        const playButton = controls.append("button")
+            .classed("control-button", true)
+            .html("▶")
+            .on("click", togglePlay);
+
+        // 进度条容器
+        const progress = controls.append("div")
+            .classed("progress-container", true)
+            .on("click", seekVideo);
+
+        // 进度条
+        progress.append("div")
+            .classed("progress-bar", true);
+
+        // 时间显示
+        const timeDisplay = controls.append("span")
+            .style("margin", "0 10px")
+            .text("00:00 / 00:00");
+
+        // 音量控制
+        controls.append("input")
+            .attr("type", "range")
+            .attr("min", 0)
+            .attr("max", 1)
+            .attr("step", 0.1)
+            .attr("value", 1)
+            .style("width", "80px")
+            .on("input", function () {
+                video.volume = this.value;
+            });
+
+        // 播放/暂停切换
+        function togglePlay() {
+            video.paused ? video.play() : video.pause();
+            playButton.html(video.paused ? "▶" : "⏸");
+        }
+
+        // 更新进度条
+        function updateProgress() {
+            const progress = (video.currentTime / video.duration) * 100;
+            d3.select(".progress-bar")
+                .style("width", progress + "%");
+
+            timeDisplay.text(
+                `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`
+            );
+        }
+
+        // 视频跳转
+        function seekVideo(event) {
+            const rect = this.getBoundingClientRect();
+            const pos = (event.clientX - rect.left) / rect.width;
+            video.currentTime = pos * video.duration;
+        }
+
+        // 时间格式化
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            seconds = Math.floor(seconds % 60);
+            return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+    </script>
+</body>
+
+</html>

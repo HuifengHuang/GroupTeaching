@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Z-score环形分布图</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        svg {
+            background: white;
+        }
+
+        .baseline {
+            stroke-dasharray: 4 2;
+            fill: none;
+        }
+
+        .max-ring {
+            stroke: #ff5252;
+            stroke-width: 1.5;
+        }
+
+        .mean-ring2 {
+            /* stroke: #91ca0c;
+            stroke-width: 1.5; */
+            fill: white
+        }
+
+        .mean-ring {
+            stroke: #91ca0c;
+            stroke-width: 1.5;
+            fill: none;
+        }
+
+        .data-node {
+            fill: #ff5252;
+            stroke: white;
+            stroke-width: 1;
+        }
+
+        .center-core {
+            fill: #616161;
+        }
+
+        .annotation {
+            font: 14px sans-serif;
+            fill: #212121;
+        }
+
+        /* 
+        .polygon-line {
+            stroke: #1976d2;
+            fill: none;
+            stroke-width: 2;
+        } */
+
+        /* 新增极值环样式 */
+        .extreme-ring {
+            stroke-dasharray: 5 3;
+            stroke-width: 1.2;
+            fill: none
+        }
+
+        .max-extreme {
+            stroke: #d32f2f;
+            /* 深红色 */
+        }
+
+        .min-extreme {
+            stroke: #1976d2;
+            /* 深蓝色 */
+        }
+
+        .polygon-line {
+            stroke: #1976d2;
+            fill: none;
+            /* 新增半透明填充 */
+            stroke-width: 2;
+            fill-opacity: 0.3;
+            /* 填充透明度调整 */
+        }
+
+        .polygon-line2 {
+            /* stroke: #1976d2; */
+            fill: white;
+            /* 新增半透明填充 */
+            stroke-width: 2;
+            /* fill-opacity: 0.8; */
+            /* 填充透明度调整 */
+        }
+
+
+        .polygon-inner {
+            fill: white;
+            stroke: none;
+        }
+
+        .polygon-outer {
+            fill: #ff5252;
+            stroke: #1976d2;
+            stroke-width: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chart"></div>
+
+    <script>
+        // const zScores = [2.5, 1, 1.5, 1, 1.5, 1, 0.2, 1, 1.2, 1, 2.0, 1, 1.5, 1, 0.6];
+        const zScores = [2.5, 1.5, 1.5, 0.2, 1.2, 2.0, 1.5, 0.6];
+        const maxValue = Math.max(...zScores);
+        const minValue = Math.min(...zScores);
+        const config = {
+            width: 600,
+            height: 600,
+            center: { x: 300, y: 300 },
+            baseRadius: 40,       // 数值0对应的半径
+            meanRadius: 100,     // 数值1对应的半径
+            margin: 100,
+            textOffset: 25
+        };
+
+        // 创建比例尺（核心修改部分）
+        const radiusScale = d3.scaleLinear()
+            .domain([0, 1])      // 数值0-1对应
+            .range([config.baseRadius, config.meanRadius])
+            .clamp(false);       // 允许超出范围的值
+
+        const svg = d3.select("#chart")
+            .append("svg")
+            .attr("width", config.width)
+            .attr("height", config.height);
+
+        const coreGroup = svg.append("g")
+            .attr("transform", `translate(${config.center.x},${config.center.y})`);
+
+
+
+
+
+
+        // 生成节点数据（动态角度分配）
+        const nodes = zScores.map((score, i) => {
+            // 计算角度间隔：360度 / 数据长度
+            const angleStep = 360 / zScores.length;
+
+            // 计算每个节点的角度（从-90度开始，顺时针分布）
+            const degrees = (i * angleStep) - 90;
+
+            // 转换为弧度
+            const radians = degrees * Math.PI / 180;
+
+            // 保持原有半径计算逻辑
+            const radius = radiusScale(score);
+
+            return {
+                x: radius * Math.cos(radians),
+                y: radius * Math.sin(radians),
+                score
+            };
+        });
+
+        coreGroup.append("circle")  // 数值1基准环
+            .attr("r", config.meanRadius)
+            .attr("class", "baseline mean-ring");
+
+        // 绘制基准环系统
+        coreGroup.append("circle")  // 数值0基准环
+            .attr("r", config.baseRadius)
+            .attr("class", "baseline center-core");
+
+        // // 绘制连接多边形
+        // coreGroup.append("path")
+        //     .datum(nodes)
+        //     .attr("class", "polygon-line")
+        //     .attr("d", d3.line()
+        //         .x(d => d.x)
+        //         .y(d => d.y)
+        //         .curve(d3.curveLinearClosed)
+        //     );
+
+        // 绘制数据节点
+        coreGroup.selectAll(".data-node")
+            .data(nodes)
+            .enter().append("circle")
+            .attr("class", "data-node")
+            .attr("cx", d => d.x)
+            .attr("cy", d => d.y)
+            .attr("r", 6)
+            .on("mouseover", function () {
+                d3.select(this).attr("r", 8);
+            })
+            .on("mouseout", function () {
+                d3.select(this).attr("r", 6);
+            });
+
+        // 修改多边形绘制部分（保持闭合曲线）
+        coreGroup.append("path")
+            .datum(nodes)
+            .attr("class", "polygon-line")
+            .attr("d", d3.line()
+                .x(d => d.x)
+                .y(d => d.y)
+                .curve(d3.curveCardinalClosed.tension(0.5))  // 保证路径闭合
+            );
+
+        // 标注系统
+        const annotations = [
+            { text: "最小值基准", radius: config.baseRadius + 15, angle: 180 },
+            { text: "数值0基准", radius: config.meanRadius + 15, angle: 0 },
+            {
+                text: `当前最大值: ${Math.max(...zScores)}`,
+                text: "最大值基准",
+                radius: radiusScale(Math.max(...zScores)) + 20, angle: -90
+            }
+        ];
+
+        annotations.forEach(anno => {
+            const pos = {
+                x: anno.radius * Math.cos(anno.angle * Math.PI / 180),
+                y: anno.radius * Math.sin(anno.angle * Math.PI / 180)
+            };
+            coreGroup.append("text")
+                .attr("class", "annotation")
+                .attr("x", pos.x)
+                .attr("y", pos.y)
+                .attr("text-anchor", "middle")
+                .text(anno.text);
+        });
+
+        coreGroup.append("circle")
+            .attr("r", radiusScale(maxValue))
+            .attr("class", "extreme-ring max-extreme");
+
+        coreGroup.append("circle")
+            .attr("r", radiusScale(minValue))
+            .attr("class", "extreme-ring min-extreme");
+
+
+        // // 在脚本部分修改多边形绘制逻辑
+        // // 添加剪切路径定义
+        // const defs = svg.append("defs");
+
+        // // 数值1基准圆剪切路径
+        // defs.append("clipPath")
+        //     .attr("id", "mean-clip")
+        //     .append("circle")
+        //     .attr("r", config.meanRadius);
+
+        // // 绘制外部红色部分（基准圆之外）
+        // coreGroup.append("path")
+        //     .datum(nodes)
+        //     .attr("class", "polygon-outer")
+        //     .attr("d", d3.line()
+        //         .x(d => d.x)
+        //         .y(d => d.y)
+        //         .curve(d3.curveCardinalClosed.tension(0.5))
+        //     );
+
+        // // 绘制内部白色部分（基准圆之内）
+        // coreGroup.append("path")
+        //     .datum(nodes)
+        //     .attr("class", "polygon-inner")
+        //     .attr("clip-path", "url(#mean-clip)")
+        //     .attr("d", d3.line()
+        //         .x(d => d.x)
+        //         .y(d => d.y)
+        //         .curve(d3.curveCardinalClosed.tension(0.5))
+        //     );
+
+
+
+
+
+
+
+    </script>
+</body>
+
+</html>

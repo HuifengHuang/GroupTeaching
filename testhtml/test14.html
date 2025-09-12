@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        .gradient-container {
+            margin: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        .scale-label {
+            font-size: 12px;
+            fill: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="gradient-container">
+        <svg id="gradient-bar"></svg>
+    </div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        // 创建渐变条尺寸
+        const width = 30;
+        const height = 200;
+
+        // 创建SVG容器
+        const svg = d3.select("#gradient-bar")
+            .attr("width", width + 50)  // 留出标签空间
+            .attr("height", height + 10);
+
+        // 定义垂直渐变
+        const gradient = svg.append("defs")
+            .append("linearGradient")
+            .attr("id", "vertical-gradient")
+            .attr("x1", "0%")
+            .attr("y1", "1")   // 垂直渐变方向（底部到顶部）
+            .attr("x2", "0%")
+            .attr("y2", "0");
+
+        gradient.selectAll("stop")
+            .data(d3.range(0, 1.1, 0.1))
+            .enter()
+            .append("stop")
+            .attr("offset", d => d)
+            .attr("stop-color", d => d3.interpolate("#F2F3E9", "#76B5AF")(d));
+
+        // 绘制渐变条
+        svg.append("rect")
+            .attr("x", 0)
+            .attr("y", 10)
+            .attr("width", width)
+            .attr("height", height)
+            .style("fill", "url(#vertical-gradient)");
+
+        // 添加刻度标签
+        const scale = d3.scaleLinear()
+            .domain([0, 1])
+            .range([height, 0]);
+
+        const axis = d3.axisRight(scale)
+            .ticks(1)
+            .tickFormat(d3.format(".0f"));
+
+        svg.append("g")
+            .attr("class", "axis")
+            .attr("transform", `translate(${width},0)`)
+            .call(axis)
+            .select(".domain").remove();  // 隐藏轴线
+
+        // 调整标签样式
+        d3.selectAll(".axis text")
+            .attr("class", "scale-label")
+            .attr("x", 10);
+    </script>
+</body>
+
+</html>

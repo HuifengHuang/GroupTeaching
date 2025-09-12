@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        .bar rect {
+            stroke: white;
+            stroke-width: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chart"></div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        // 数据配置
+        const data = [
+            { category: "A", parts: [20, 10, 15] },
+            { category: "B", parts: [25, 25, 20] },
+            { category: "C", parts: [15, 35, 10] }
+        ];
+
+        // 尺寸参数
+        const width = 1400;
+        const height = 150;
+        const barHeight = 40;      // 单个柱子的高度
+        const spacing = 180;        // 柱子间距
+
+        // 创建SVG容器
+        const svg = d3.select("#chart")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        // 横向布局计算
+        data.forEach((d, i) => {
+            console.log(i);
+            let xOffset = 50 + i * spacing;  // 柱子起始X位置
+
+            // 堆叠计算
+            let accum = 10;
+            d.parts.forEach((value, partIndex) => {
+                svg.append("rect")
+                    .attr("x", xOffset + accum)
+                    .attr("y", height / 2 - barHeight / 2)
+                    .attr("width", value * 2)  // 长度放大系数
+                    .attr("height", barHeight)
+                    .attr("fill", partIndex === 1 ? "#ffa500" :
+                        partIndex === 0 ? "#4e79a7" : "#59a14f")
+                    .attr("stroke", "white");
+
+                accum += value * 2;  // 累加堆叠位置
+            });
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>分组矩形树图布局对比</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .chart {
+            border: 1px solid #ddd;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-title {
+            text-align: center;
+            font: 16px/1.5 'Arial', sans-serif;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .group {
+            stroke: #333;
+            stroke-width: 2px;
+            fill-opacity: 0.1;
+        }
+
+        .group-label {
+            font-size: 12px;
+            /* font-weight: bold; */
+            fill: #666;
+        }
+
+        .node {
+            transition: opacity 0.2s;
+        }
+
+        .node:hover {
+            opacity: 0.8;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container" id="main-container"></div>
+
+    <script>
+        // 1. 分层数据结构
+        const dataset = {
+            name: "root",
+            children: [
+                {
+                    name: "Group1",
+                    children: [
+                        {
+                            name: "GroupA",
+                            children: [
+                                { name: "A-1", value: 40 }, { name: "A-2", value: 35 },
+                                { name: "A-3", value: 30 }, { name: "A-4", value: 25 }
+                            ]
+                        }, { name: "B", value: 35 },
+                        { name: "C", value: 30 }, { name: "D", value: 25 }
+                    ]
+                },
+                {
+                    name: "Group2",
+                    children: [
+                        { name: "E", value: 20 }, { name: "F", value: 15 },
+                        { name: "G", value: 10 }, { name: "H", value: 8 }
+                    ]
+                },
+                {
+                    name: "Group3",
+                    children: [
+                        { name: "I", value: 60 }, { name: "J", value: 40 },
+                        { name: "K", value: 30 }, { name: "L", value: 20 }
+                    ]
+                },
+                {
+                    name: "Group4",
+                    children: [
+                        { name: "I", value: 60 }, { name: "J", value: 40 },
+                        { name: "K", value: 30 }, { name: "L", value: 20 }
+                    ]
+                }
+            ]
+        };
+
+        // 2. 布局配置
+        const layouts = [
+            { name: "SliceDice(横竖排列)", tile: d3.treemapSliceDice },
+            { name: "Squarify(正方化)", tile: d3.treemapSquarify },
+            { name: "Binary(平衡二叉树)", tile: d3.treemapBinary },
+            // { name: "Spiral", tile: spiralTile },
+            { name: "GoldenRatio(黄金分割比)", tile: (n, x0, y0, x1, y1) => squarify(1.618, n, x0, y0, x1, y1) },
+            { name: "CustomSquarify(自定义分割比)", tile: customSquarify }
+        ];
+
+        // 3. 可视化参数
+        const width = 320, height = 300;
+        const color = d3.scaleOrdinal(d3.schemeTableau10);
+
+        // 4. 初始化容器
+        const container = d3.select("#main-container");
+
+        layouts.forEach(layout => {
+            const chart = container.append("div")
+                .classed("chart", true);
+
+            chart.append("div")
+                .classed("chart-title", true)
+                .text(layout.name);
+
+            const svg = chart.append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+            renderTreemap(svg, layout.tile);
+        });
+
+        // 5. 核心渲染函数（支持分组）
+        // 5. 核心渲染函数（支持多级分组）
+        function renderTreemap(svg, tileMethod) {
+            const root = d3.hierarchy(dataset)
+                .sum(d => d.value)
+                .sort((a, b) => b.value - a.value);
+
+            const treemap = d3.treemap()
+                .tile(tileMethod)
+                .size([width, height])
+                .padding(2)
+                .paddingTop(20)
+                .round(true);
+
+            treemap(root);
+
+            // 绘制所有分组（包含多级）
+            const groups = svg.selectAll("g.group")
+                .data(root.descendants().filter(d => d.depth >= 1 && d.children)) // 包含所有父节点
+                .enter().append("g")
+                .attr("class", d => `group depth-${d.depth}`)
+                .attr("transform", d => `translate(${d.x0},${d.y0})`);
+
+            // 分组背景（不同层级不同透明度）
+            groups.append("rect")
+                .attr("width", d => d.x1 - d.x0)
+                .attr("height", d => d.y1 - d.y0)
+                .style("fill", "rgba(0,0,0,0.05)")
+                .style("stroke", "#999")
+                .style("stroke-width", d => 2 - d.depth * 0.5);
+
+            // 多级分组标签
+            groups.append("text")
+                // .attr("class", "group-label")
+                .attr("x", 5)
+                .attr("y", d => 10 + d.depth * 1) // 深度越大标签越往下
+                .text(d => d.data.name)
+                .style("font-size", d => `${14 - d.depth * 2}px`)
+                .style("font-weight", "normal")  // 新增此行强制普通字体
+                .style("fill", "yellow");
+
+            // 绘制叶子节点
+            const nodes = svg.selectAll("g.node")
+                .data(root.leaves())
+                .enter().append("g")
+                .attr("class", "node")
+                .attr("transform", d => `translate(${d.x0},${d.y0})`);
+
+            nodes.append("rect")
+                .attr("width", d => d.x1 - d.x0)
+                .attr("height", d => d.y1 - d.y0)
+                .attr("fill", d => color(d.ancestors()[1].data.name)); // 使用父组名称着色
+
+            nodes.append("text")
+                .text(d => d.data.name)
+                .attr("x", 4)
+                .attr("y", 14)
+                .style("font-size", "10px")
+                .style("fill", "white");
+        }
+
+        // 6. 自定义布局算法（支持递归分组）
+        function squarify(ratio, parent, x0, y0, x1, y1) {
+            if (!parent.children) return parent;
+
+            const nodes = parent.children;
+            const n = nodes.length;
+            let i0 = 0, i1 = 0;
+            let total = parent.value;
+            console.log(parent.data);
+
+            while (i0 < n) {
+                let sumRow = 0, minVal = Infinity, maxVal = -Infinity;
+                const dx = x1 - x0, dy = y1 - y0;
+                const horizontal = dx >= dy;
+                const alpha = (horizontal ? dy / dx : dx / dy) / (total * ratio);
+
+                do {
+                    const node = nodes[i1];
+                    sumRow += node.value;
+                    minVal = Math.min(minVal, node.value);
+                    maxVal = Math.max(maxVal, node.value);
+                    i1++;
+                } while (i1 < n && canGrowRow(nodes, i0, i1, sumRow, alpha, minVal, maxVal));
+
+                layoutRow(nodes.slice(i0, i1), x0, y0, x1, y1, horizontal, sumRow / total, sumRow);
+
+                if (horizontal) {
+                    y0 += dy * (sumRow / total);
+                } else {
+                    x0 += dx * (sumRow / total);
+                }
+                total -= sumRow;
+                i0 = i1;
+            }
+
+            // 递归处理子分组
+            nodes.forEach(child => {
+                if (child.children) {
+                    squarify(ratio, child, child.x0, child.y0, child.x1, child.y1);
+                }
+            });
+
+            return parent;
+
+            function canGrowRow(nodes, i0, i1, sumCurrent, alpha, currentMin, currentMax) {
+                if (i1 <= i0 + 1) return true;
+
+                const beta = sumCurrent * sumCurrent * alpha;
+                const ratio = Math.max(currentMax / beta, beta / currentMin);
+
+                const newSum = sumCurrent + nodes[i1].value;
+                const newBeta = newSum * newSum * alpha;
+                const newRatio = Math.max(
+                    Math.max(currentMax, nodes[i1].value) / newBeta,
+                    newBeta / Math.min(currentMin, nodes[i1].value)
+                );
+
+                return newRatio <= ratio;
+            }
+
+            function layoutRow(rowNodes, x0, y0, x1, y1, horizontal, scale, sumRow) {
+                if (horizontal) {
+                    const h = (y1 - y0) * scale;
+                    let x = x0;
+                    rowNodes.forEach(node => {
+                        const w = (x1 - x0) * (node.value / sumRow);
+                        node.x0 = x;
+                        node.x1 = x + w;
+                        node.y0 = y0;
+                        node.y1 = y0 + h;
+                        x += w;
+                    });
+                } else {
+                    const w = (x1 - x0) * scale;
+                    let y = y0;
+                    rowNodes.forEach(node => {
+                        const h = (y1 - y0) * (node.value / sumRow);
+                        node.x0 = x0;
+                        node.x1 = x0 + w;
+                        node.y0 = y;
+                        node.y1 = y + h;
+                        y += h;
+                    });
+                }
+            }
+        }
+
+        // 7. 其他布局实现
+        function customSquarify(node, x0, y0, x1, y1) {
+            return squarify(1.6, node, x0, y0, x1, y1);
+        }
+
+        function spiralTile(node, x0, y0, x1, y1) {
+            // 核心螺旋布局逻辑
+            const spiralLayout = (parent, px0, py0, px1, py1) => {
+                const children = parent.children;
+                if (!children || children.length === 0) return;
+
+                // 1. 计算基础参数
+                const centerX = (px0 + px1) / 2;
+                const centerY = (py0 + py1) / 2;
+                const maxRadius = Math.min(px1 - px0, py1 - py0) * 0.45;
+                const totalValue = parent.value;
+
+                // 2. 初始化螺旋参数
+                let angle = 0;    // 起始角度（角度制）
+                let radius = 0;   // 当前半径
+                let cumulativeFactor = 1 / Math.pow(1.2, parent.depth);  // 深度衰减因子
+
+                // 3. 遍历子节点布局
+                children.forEach(child => {
+                    // 计算节点尺寸
+                    const nodeSize = Math.sqrt(child.value / totalValue) * maxRadius;
+                    const effectiveRadius = radius * cumulativeFactor;
+
+                    // 极坐标转笛卡尔坐标
+                    const radian = angle * (Math.PI / 180);
+                    const x = centerX + effectiveRadius * Math.cos(radian);
+                    const y = centerY + effectiveRadius * Math.sin(radian);
+
+                    // 设置节点边界（包含安全约束）
+                    child.x0 = Math.max(px0, x - nodeSize);
+                    child.x1 = Math.min(px1, x + nodeSize);
+                    child.y0 = Math.max(py0, y - nodeSize);
+                    child.y1 = Math.min(py1, y + nodeSize);
+
+                    // 动态调整螺旋参数
+                    radius += nodeSize * 1.5;  // 半径增量
+                    angle += 28 - (radius / maxRadius) * 10;  // 角度衰减
+
+                    // 4. 递归处理子节点
+                    if (child.children) {
+                        spiralLayout(child, child.x0, child.y0, child.x1, child.y1);
+                    }
+                });
+            };
+
+            // 执行布局并返回修改后的节点
+            spiralLayout(node, x0, y0, x1, y1);
+            return node;
+        }
+    </script>
+</body>
+
+</html>

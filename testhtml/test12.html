@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .dot {
+            opacity: 0.8;
+            transition: all 0.3s;
+        }
+
+        .dot:hover {
+            r: 6;
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chart"></div>
+
+    <script>
+        const width = 800, height = 500;
+        const margin = { top: 20, right: 20, bottom: 20, left: 40 };
+
+        // 完整20个数据点
+        const data = [
+            { x: 0, y: 8.2 }, { x: 0, y: 6.5 }, { x: 0, y: 4.5 },
+            { x: 1, y: 7.3 }, { x: 1, y: 6.9 }, { x: 1, y: 5 },
+            { x: 2, y: 7.8 }, { x: 2, y: 6.0 }, { x: 2, y: 4.9 },
+            { x: 3, y: 7 }, { x: 3, y: 4.7 }, { x: 3, y: 6 },
+            { x: 4, y: 5.2 }, { x: 4, y: 5.0 }, { x: 4, y: 5.1 },
+            { x: 5, y: 4.9 }, { x: 5, y: 5.0 }, { x: 5, y: 4.95 },
+            { x: 6, y: 5.1 }, { x: 6, y: 5.2 }
+        ];
+
+        const svg = d3.select("#chart")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        // 动态比例尺
+        const xScale = d3.scaleLinear()
+            .domain([0, 19])
+            .range([margin.left, width - margin.right]);
+
+        const yScale = d3.scaleLinear()
+            .domain([4.5, 8.5])
+            .range([height - margin.bottom, margin.top]);
+
+        // 绘制散点（增强趋势表现）
+        svg.selectAll("circle")
+            .data(data)
+            .enter()
+            .append("circle")
+            .attr("class", "dot")
+            .attr("r", d => 4)
+            .attr("cx", d => xScale(d.x))
+            .attr("cy", d => yScale(d.y))
+            .attr("fill", d => d3.interpolateCool(d.x / 19))
+            .append("title")
+            .text(d => `阶段: ${d.x + 1}\n值: ${d.y.toFixed(2)}`);
+
+        // 数据处理：生成极值数据集
+        const grouped = d3.group(data, d => d.x);
+        const maxData = [];
+        const minData = [];
+
+        grouped.forEach((values, x) => {
+            const yValues = values.map(d => d.y);
+            maxData.push({ x: +x, y: Math.max(...yValues) });
+            minData.push({ x: +x, y: Math.min(...yValues) });
+        });
+
+        // 创建曲线生成器（使用单调曲线插值）
+        const lineGenerator = d3.line()
+            .x(d => xScale(d.x))
+            .y(d => yScale(d.y))
+            .curve(d3.curveMonotoneX); // 保持x方向单调性
+
+        // 绘制最大值的连线
+        svg.append("path")
+            .datum(maxData.sort((a, b) => a.x - b.x))
+            .attr("d", lineGenerator)
+            .attr("fill", "none")
+            .attr("stroke", "#ff5252") // 红色表示上限
+            .attr("stroke-width", 2)
+            .attr("stroke-dasharray", "5 2");
+
+        // 绘制最小值的连线
+        svg.append("path")
+            .datum(minData.sort((a, b) => a.x - b.x))
+            .attr("d", lineGenerator)
+            .attr("fill", "none")
+            .attr("stroke", "#448aff") // 蓝色表示下限
+            .attr("stroke-width", 2)
+            .attr("stroke-dasharray", "5 2");
+    </script>
+</body>
+
+</html>

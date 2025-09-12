@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        /* 层级颜色定义 */
+        .level0 rect {
+            fill: #4daf4a;
+        }
+
+        /* 顶层 */
+        .level1 rect {
+            fill: #e5c185;
+        }
+
+        /* 二级 */
+        .level2 rect {
+            fill: #6baed6;
+        }
+
+        /* 三级 */
+
+        .connector {
+            fill: none;
+            stroke: #666;
+            stroke-width: 1.5;
+            opacity: 0.8;
+        }
+
+        .label {
+            font: 14px Arial;
+            fill: #333;
+            text-anchor: end;
+            dominant-baseline: middle;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="hierarchy-view"></div>
+
+    <script>
+        const data = {
+            name: "1",
+            children: [
+                {
+                    name: "A",
+                    children: [
+                        { name: "A-1" }, { name: "A-2" }, { name: "A-3" }, { name: "A-4" },
+                        { name: "A-5" }, { name: "A-6" } // 示例数据超出五个
+                    ]
+                },
+                { name: "B", children: Array(3).fill().map((_, i) => ({ name: `B-${i + 1}` })) }
+            ]
+        };
+
+        const data2 = {
+            name: "2",
+            children: [
+                {
+                    name: "C",
+                    children: [
+                        { name: "c-1" }, { name: "c-2" }, { name: "c-3" }
+                    ]
+                },
+                { name: "D", children: Array(5).fill().map((_, i) => ({ name: `D-${i + 1}` })) },
+                { name: "C" }, { name: "D" }
+            ]
+        };
+
+        const config = {
+            width: 800,
+            levelWidth: [300, 250, 200, 100], // 各层级宽度 [0级,1级,2级]
+            nodeHeight: 40,
+            spacing: 10
+        };
+        let flag = 0;
+
+        const svg = d3.select("#hierarchy-view")
+            .append("svg")
+            .attr("width", config.width)
+            .attr("height", 1600);
+
+        function drawAligned(node, startX, startY, depth = 0) {
+            console.log(node.name);
+            // if (flag == 5) {
+            //     startX = startX + 300
+            //     flag = 0
+            // } else {
+            //     flag = flag + 1
+            // }
+
+            // 当前层级的宽度
+            const nodeWidth = config.levelWidth[depth];
+
+            // 右侧对齐坐标计算
+            const x = startX - nodeWidth;
+
+            if (node.name != 2) {
+                // 绘制当前节点
+                const g = svg.append("g")
+                    .attr("transform", `translate(${x},${startY})`)
+                    .classed(`level${depth}`, true);
+
+                g.append("rect")
+                    .attr("width", nodeWidth)
+                    .attr("height", config.nodeHeight)
+                    .attr("rx", 5)  // 圆角x半径
+                    .attr("ry", 5)  // 圆角y半径
+                    .attr("stroke", "#333")  // 边框颜色
+                    .attr("stroke-width", 1); // 边框粗细
+
+                g.append("text")
+                    .attr("class", "label")
+                    .attr("x", nodeWidth - 10)
+                    .attr("y", config.nodeHeight / 2)
+                    .text(node.name);
+
+            }
+
+
+
+            // 绘制子节点
+            if (node.children) {
+                let currentY = startY + config.nodeHeight;
+
+                node.children.forEach(child => {
+                    // 保持右侧对齐：子节点继承父节点的起始X坐标
+                    const childEndX = x + nodeWidth;
+                    const childWidth = config.levelWidth[depth + 1];
+
+                    // // 绘制连接线
+                    // svg.append("path")
+                    //     .attr("class", "connector")
+                    //     .attr("d", `M ${x + nodeWidth} ${startY + config.nodeHeight / 2}
+                    //               L ${childEndX - childWidth} ${currentY + config.nodeHeight / 2}`);
+
+                    // 递归绘制
+                    currentY = drawAligned(
+                        child,
+                        childEndX,  // 保持右侧对齐
+                        currentY,
+                        depth + 1
+                    );
+                });
+
+                return currentY;
+            }
+            return startY + config.nodeHeight;
+        }
+
+        // 从右侧开始绘制 (初始右侧坐标700)
+        drawAligned(data, 300, 40, 0);
+        drawAligned(data2, 600, 40, 0);
+    </script>
+</body>
+
+</html>

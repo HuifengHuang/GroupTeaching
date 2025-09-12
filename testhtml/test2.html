@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3 Names with Lines</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .name {
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+        }
+
+        .line {
+            stroke-width: 2;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="chart"></div>
+
+    <script>
+        const data = [
+            {
+                name: "Alice",
+                color: "red",
+                points: [
+                    { time: 0, value: 1, width: 2 },
+                    { time: 1, value: 1, width: 3 },
+                    { time: 2, value: 2 },
+                    { time: 3, value: 2 },
+                    { time: 4, value: 2 },
+                    { time: 8, value: 2 },
+                    { time: 9.5, value: 1.6 },
+                    { time: 13, value: 1.6 },
+                ]
+            },
+            {
+                name: "Bob",
+                color: "green",
+                points: [
+                    { time: 0, value: 2 },
+                    { time: 0.5, value: 2 },
+                    { time: 1, value: 2.5 },
+                    { time: 2, value: 2.5 },
+                    { time: 3, value: 2.5 },
+                    { time: 4, value: 2.5 },
+                    { time: 8, value: 2.5 },
+                    { time: 9, value: 4 },
+                    { time: 13, value: 4 },
+                ]
+            },
+            {
+                name: "Clare",
+                color: "black",
+                points: [
+                    { time: 0, value: 3 },
+                    { time: 1, value: 3 },
+                    { time: 2, value: 3 },
+                    { time: 3, value: 3 },
+                    { time: 3.5, value: 2.7 },
+                    { time: 4, value: 2.7 },
+                    { time: 8, value: 2.7 },
+                    { time: 9.5, value: 2.3 },
+                    { time: 13, value: 2.3 },
+                    // { time: 2, value: 2.5 },
+                    // { time: 3, value: 0.5 },
+                ]
+            },
+            {
+                name: "Dog",
+                color: "brown",
+                points: [
+                    { time: 0, value: 4 },
+                    { time: 1, value: 4 },
+                    { time: 2, value: 4 },
+                    { time: 3, value: 4 },
+                    { time: 3.5, value: 3 },
+                    { time: 4, value: 3 },
+                    { time: 8, value: 3 },
+                    { time: 9, value: 5 },
+                    { time: 13, value: 5 },
+                    // { time: 2, value: 2.5 },
+                    // { time: 3, value: 0.5 },
+                ]
+            },
+        ];
+
+        const width = 4000;
+        const height = 300;
+        const padding = 30;
+
+        const svg = d3.select("#chart")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        const allValues = data.flatMap(d => d.points.map(p => p.value));
+        const xScale = d3.scaleLinear()
+            .domain([0, 100])
+            .range([padding, width - padding]);
+
+        const yScale = d3.scaleLinear()
+            .domain([0, d3.max(allValues)])
+            .range([height - padding, padding]);
+
+        // 修改点：添加 curveBasis 曲线插值
+        const lineGenerator = d3.line()
+            .x(d => xScale(d.time) + 30)
+            .y(d => yScale(d.value))
+            .curve(d3.curveMonotoneX)
+
+        svg.selectAll(".line-group")
+            .data(data)
+            .enter()
+            .append("g")
+            .attr("class", "line-group")
+            .call(g => {
+                // 绘制折线
+                g.append("path")
+                    .attr("class", "line-path")
+                    .attr("d", d => lineGenerator(d.points))
+                    .attr("stroke", d => d.color)
+                    .attr("fill", "none")
+                    .attr("stroke-width", d => {
+                        // 自定义逻辑：例如取第一个点的 strokeWidth 属性
+                        return d.points[0]?.strokeWidth || 2; // 默认值2
+                    });
+
+                // 添加文本标签
+                g.append("text")
+                    .attr("class", "line-label")
+                    .attr("x", d => xScale(d.points[0].time))
+                    .attr("y", d => yScale(d.points[0].value))
+                    .attr("dy", "0.35em")
+                    .text(d => d.name)
+                    .attr("fill", d => d.color)
+                    .attr("font-size", "12px")
+                    .attr("font-weight", "bold");
+            });
+
+        // 定义多个标注矩形参数
+        const bubbleSpecs = [
+            {
+                x: 1, width: 7,
+                y: 1.5, height: 2,
+                radius: 10,
+                color: "gold"
+            },
+            {
+                x: 9, width: 5,
+                y: 1.5, height: 1,
+                radius: 8,
+                color: "lightblue"
+            }
+        ];
+
+        // 批量绘制标注矩形
+        svg.selectAll(".annotation-rect")
+            .data(bubbleSpecs)
+            .enter()
+            .append("rect")
+            .attr("class", "annotation-rect")
+            .attr("x", d => xScale(d.x) + 30)
+            .attr("y", d => yScale(d.y + d.height))
+            .attr("width", d => xScale(d.x + d.width) - xScale(d.x))
+            .attr("height", d => yScale(d.y) - yScale(d.y + d.height))
+            .attr("rx", d => d.radius)
+            .attr("ry", d => d.radius)
+            .attr("fill", d => d.color)
+            .attr("fill-opacity", 0.15)
+            .attr("stroke", d => d3.color(d.color).darker())
+            .attr("stroke-width", 1)
+            .attr("stroke-dasharray", "3,2");
+    </script>
+</body>
+
+</html>

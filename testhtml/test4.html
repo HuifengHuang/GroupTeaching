@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>矩阵与柱状图</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        .matrix-container {
+            display: flex;
+            align-items: flex-end;
+            gap: 20px;
+        }
+
+        table {
+            border-collapse: collapse;
+            margin: 20px;
+        }
+
+        th,
+        td {
+            width: 60px;
+            height: 60px;
+            text-align: center;
+            border: 1px solid #ddd;
+            font-weight: bold;
+            position: relative;
+        }
+
+        .header {
+            background-color: #f5f5f5;
+        }
+
+        .row-chart {
+            width: 200px;
+            background: #f0f0f0;
+            padding: 10px;
+        }
+
+        .column-chart {
+            height: 200px;
+            background: #f0f0f0;
+            padding: 10px;
+        }
+
+        .bar {
+            background: #ff6b6b;
+            margin: 5px 0;
+            transition: width 0.3s;
+            color: white;
+            padding: 3px;
+        }
+
+        .col-bar {
+            width: 40px;
+            display: inline-block;
+            margin: 0 5px;
+            vertical-align: bottom;
+            background: #4ecdc4;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="matrix-container">
+            <!-- 主矩阵 -->
+            <table class="matrix">
+                <tr>
+                    <th class="header"></th>
+                    <th v-for="col in columns" :key="col" class="header">{{ col }}</th>
+                    <th class="header">Total</th>
+                </tr>
+                <tr v-for="(row, rowIndex) in matrix" :key="rowIndex">
+                    <th class="header">{{ columns[rowIndex] }}</th>
+                    <td v-for="(cell, colIndex) in row" :key="colIndex"
+                        :style="{ backgroundColor: getColor(cell.value) }">
+                        {{ cell.value.toFixed(2) }}
+                    </td>
+                    <!-- 行汇总柱状图 -->
+                    <td style="border: none; padding: 0;">
+                        <div class="row-chart">
+                            <div class="bar" :style="{ width: rowSums[rowIndex] * 100 + '%' }">
+                                {{ rowSums[rowIndex].toFixed(2) }}
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <!-- 列汇总柱状图 -->
+                <tr>
+                    <th class="header">Total</th>
+                    <td v-for="(sum, index) in columnSums" :key="index">
+                        <div class="col-bar" :style="{ height: sum * 50 + 'px' }">
+                            {{ sum.toFixed(2) }}
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, computed } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    columns: ['A', 'B', 'C', 'D'],
+                    matrix: [
+                        [{ value: 1.00 }, { value: 0.75 }, { value: 0.40 }, { value: 0.20 }],
+                        [{ value: 0.75 }, { value: 0.90 }, { value: 0.30 }, { value: 0.60 }],
+                        [{ value: 0.40 }, { value: 0.30 }, { value: 0.80 }, { value: 0.50 }],
+                        [{ value: 0.20 }, { value: 0.60 }, { value: 0.50 }, { value: 0.95 }]
+                    ]
+                }
+            },
+            computed: {
+                rowSums() {
+                    return this.matrix.map(row =>
+                        row.reduce((sum, cell) => sum + cell.value, 0)
+                    );
+                },
+                columnSums() {
+                    return this.matrix[0].map((_, colIndex) =>
+                        this.matrix.reduce((sum, row) => sum + row[colIndex].value, 0)
+                    );
+                }
+            },
+            methods: {
+                getColor(value) {
+                    const lightness = 100 - (value * 100);
+                    return `hsl(240, 50%, ${lightness}%)`;
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>
+<!-- if (colLabel == rowLabel) {
+    matrixData.push({
+        row: rowLabel,
+        col: colLabel,
+        value: 0
+    });
+
+} else {
+    matrixData.push({
+        row: rowLabel,
+        col: colLabel,
+        value: Math.random()
+    });
+
+} -->

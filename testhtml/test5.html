@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        .matrix-label {
+            font-family: Arial;
+            font-size: 12px;
+            user-select: none;
+        }
+
+        .cell-text {
+            font-family: Arial;
+            font-size: 10px;
+            user-select: none;
+        }
+
+        .bar-label {
+            font-family: Arial;
+            font-size: 10px;
+            fill: #333;
+        }
+
+        .matrix-title {
+            font-family: Arial;
+            font-size: 14px;
+            font-weight: bold;
+            fill: #4cc4d5;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="matrix-container"></div>
+
+    <script>
+        // 矩阵配置
+        const labels = ['a', 'b', 'c', 'd'];
+        const matrixCount = 1;
+        const matrixSize = labels.length;
+
+        // 可视化配置
+        const config = {
+            width: 1200,
+            height: 800,
+            margin: 80,
+            cell: {
+                size: 80,
+                gap: 25
+            },
+            barsize: 300,
+            bar: {
+                row: {
+                    height: 20,  // 行柱状图高度
+                    offset: 0   // 行柱状图与单元格间距
+                },
+                col: {
+                    width: 20,   // 列柱状图宽度
+                    offset: 0,  // 列柱状图与单元格间距
+                    baseY: 0     // 列柱状图基准Y坐标（底部位置）
+                },
+                color: "#4daf4a",
+                color1: "#e5c185"
+            }
+        };
+
+        // 生成矩阵数据
+        const matricesData = Array.from({ length: matrixCount }, () =>
+            labels.flatMap(row =>
+                labels.map(col => ({
+                    row: row,
+                    col: col,
+                    value: col === row ? 0 : Math.random()
+                }))
+            )
+        );
+
+        // 创建SVG画布
+        const svg = d3.select("#matrix-container")
+            .append("svg")
+            .attr("width", config.width)
+            .attr("height", config.height);
+
+        // 颜色比例尺
+        const colorScale = d3.scaleSequential()
+            .domain([0, 1])
+            .interpolator(d3.interpolateReds);
+
+        matricesData.forEach((matrixData, matrixIndex) => {
+            // 计算矩阵位置
+            const matrixX = config.margin + matrixIndex * 500;
+            const matrixGroup = svg.append("g")
+                .attr("transform", `translate(${matrixX},${config.margin})`);
+
+            // 计算行列总和
+            const rowSums = labels.map(row =>
+                d3.sum(matrixData.filter(d => d.row === row), d => d.value)
+            );
+            const colSums = labels.map(col =>
+                d3.sum(matrixData.filter(d => d.col === col), d => d.value)
+            );
+
+            // 创建比例尺
+            const rowScale = d3.scaleLinear()
+                .domain([0, d3.max(rowSums)])
+                .range([0, config.barsize]);
+
+            const colScale = d3.scaleLinear()
+                .domain([0, d3.max(colSums)])
+                .range([0, config.barsize]);
+
+            // 计算列柱状图基准Y坐标（底部位置）
+            config.bar.col.baseY = matrixSize * (config.cell.size + config.cell.gap) - config.cell.gap;
+
+            // 绘制单元格和柱状图
+            labels.forEach((row, i) => {
+                labels.forEach((col, j) => {
+                    const cellData = matrixData.find(d => d.row === row && d.col === col);
+
+                    // 主单元格
+                    matrixGroup.append("rect")
+                        .attr("x", j * (config.cell.size + config.cell.gap))
+                        .attr("y", i * (config.cell.size + config.cell.gap))
+                        .attr("width", config.cell.size)
+                        .attr("height", config.cell.size)
+                        .attr("fill", colorScale(cellData.value))
+                        .attr("rx", 3)
+                        .attr("stroke", "#fff");
+
+                    // // 单元格文字
+                    // matrixGroup.append("text")
+                    //     .attr("class", "cell-text")
+                    //     .attr("x", j * (config.cell.size + config.cell.gap) + config.cell.size / 2)
+                    //     .attr("y", i * (config.cell.size + config.cell.gap) + config.cell.size / 2)
+                    //     .text(cellData.value.toFixed(2))
+                    //     .attr("fill", cellData.value > 0.5 ? "white" : "black");
+
+                    // 行总和柱状图（每行下方）
+                    if (j === labels.length - 1) {
+                        const barY = i * (config.cell.size + config.cell.gap) + config.cell.size + config.bar.row.offset;
+                        matrixGroup.append("rect")
+                            .attr("x", 0)
+                            .attr("y", barY)
+                            .attr("width", rowScale(rowSums[i]))
+                            .attr("height", config.bar.row.height)
+                            .attr("fill", config.bar.color)
+                            .attr("rx", 3);
+                    }
+
+                    // 列总和柱状图（每列右侧，从下往上）
+                    if (i === labels.length - 1) {
+                        const barHeight = colScale(colSums[j]);
+                        const barX = j * (config.cell.size + config.cell.gap) + config.cell.size + config.bar.col.offset;
+
+
+                        // 柱状图（从底部向上生长）
+                        matrixGroup.append("rect")
+                            .attr("x", barX)
+                            .attr("y", 0) // 关键修改：基准Y - 柱高
+                            .attr("width", config.bar.col.width)
+                            .attr("height", barHeight)
+                            .attr("fill", config.bar.color1)
+                            .attr("rx", 3);
+
+                        // // 数值标签（显示在柱顶）
+                        // matrixGroup.append("text")
+                        //     .attr("class", "bar-label")
+                        //     .attr("x", barX + config.bar.col.width / 2)
+                        //     .attr("y", config.bar.col.baseY - barHeight - 5)
+                        //     .attr("text-anchor", "middle")
+                        //     .text(colSums[j].toFixed(2));
+                    }
+                });
+            });
+
+            // 绘制标签系统
+            labels.forEach((label, i) => {
+                // 行标签
+                matrixGroup.append("text")
+                    .attr("class", "matrix-label")
+                    .attr("x", -config.cell.gap)
+                    .attr("y", i * (config.cell.size + config.cell.gap) + config.cell.size / 2)
+                    .text(label);
+
+                // 列标签
+                matrixGroup.append("text")
+                    .attr("class", "matrix-label")
+                    .attr("x", i * (config.cell.size + config.cell.gap) + config.cell.size / 2)
+                    .attr("y", -config.cell.gap)
+                    .text(label);
+            });
+
+            // // 矩阵标题
+            // matrixGroup.append("text")
+            //     .attr("class", "matrix-title")
+            //     .attr("x", (labels.length * (config.cell.size + config.cell.gap)) / 2)
+            //     .attr("y", -30)
+            //     .text(`Matrix ${matrixIndex + 1}`);
+        });
+
+        // // 图例
+        // const legend = svg.append("g")
+        //     .attr("transform", "translate(50,50)");
+
+        // legend.append("rect")
+        //     .attr("width", 20)
+        //     .attr("height", 20)
+        //     .attr("fill", config.bar.color)
+        //     .attr("rx", 3);
+
+        // legend.append("text")
+        //     .attr("x", 25)
+        //     .attr("y", 15)
+        //     .text("Interaction Sum");
+    </script>
+</body>
+
+</html>

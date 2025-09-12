@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        // 配置参数
+        const width = 600, height = 400;
+        const data = [25, 60, 40, 80, 55, 35, 70].map((v, i) => ({ x: i, y: v }));
+        console.log(data);
+
+        // 创建画布
+        const svg = d3.select("body")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        // 创建比例尺
+        const xScale = d3.scaleLinear()
+            .domain([0, data.length - 1])
+            .range([30, width - 30]);
+
+        const yScale = d3.scaleLinear()
+            .domain([0, 100])
+            .range([height - 30, 30]);
+
+        // 创建阶梯线生成器
+        const line = d3.line()
+            .x(d => xScale(d.x))
+            .y(d => yScale(d.y))
+            .curve(d3.curveStep);  // 关键配置：使用阶梯曲线
+
+        // 绘制路径
+        svg.append("path")
+            .datum(data)
+            .attr("d", line)
+            .attr("fill", "none")
+            .attr("stroke", "steelblue")
+            .attr("stroke-width", 2);
+    </script>
+</body>
+
+</html>

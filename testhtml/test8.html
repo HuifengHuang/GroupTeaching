@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>确定数据热力图</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+
+<body>
+    <div id="chart"></div>
+
+    <script>
+        // 确定数据集（5行20列）
+        const data = [
+            // 前两行：大部分负数，末尾少量正值
+            [-0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, 0.1, 0.2, 0.3, 0.4, 0.5],  // 行1：前15负，后5正
+            [-1.0, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6, 0.0, 0.1, 0.2, 0.3, 0.4],  // 行2：前15负，后5正
+
+            // 第三行：全负数（特殊模式）
+            [-0.5, -0.6, -0.7, -0.8, -0.9, -1.0, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6],  // 行3：全负数
+
+            // 后两行：前段负，后段正
+            [-0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 0.9],  // 行4：前9负，后11正
+            [-0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]   // 行5：前10负，后10正
+        ];
+        // 可视化参数
+        const width = 800;
+        const height = 200;
+        const cellPadding = 0;
+
+        // 颜色映射器
+        const colorScale = d => {
+            if (d <= 0) {
+                return d3.interpolate(
+                    d3.rgb(99, 86, 158), // 深蓝
+                    d3.rgb(255, 255, 255)  // 浅蓝
+                )((d + 1) / 1); // 负数映射到0-1区间
+            }
+            return d3.interpolate(
+                d3.rgb(255, 255, 255),    // 浅红
+                d3.rgb(255, 0, 0)     // 深红
+            )(d); // 正数直接映射
+        };
+
+        // 创建SVG
+        const svg = d3.select("#chart")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        // 计算单元格尺寸
+        const cellWidth = width / data[0].length;
+        const cellHeight = height / data.length;
+
+        // 绘制热力块
+        svg.selectAll("g.row")
+            .data(data)
+            .join("g")
+            .attr("class", "row")
+            .attr("transform", (d, i) => `translate(0,${i * cellHeight})`)
+            .selectAll("rect")
+            .data(d => d)
+            .join("rect")
+            .attr("x", (d, i) => i * cellWidth)
+            .attr("width", cellWidth - cellPadding)
+            .attr("height", cellHeight - cellPadding)
+            .attr("fill", d => colorScale(d))
+            .attr("stroke", "#fff")
+            .attr("stroke-width", 0.5);
+    </script>
+</body>
+
+</html>

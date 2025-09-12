@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        .combined-chart {
+            margin: 20px;
+            border: 1px solid #eee;
+        }
+
+        .bar {
+            fill: #4CAF50;
+            opacity: 0.6;
+        }
+
+        .line {
+            fill: none;
+            stroke: #2196F3;
+            stroke-width: 3;
+        }
+
+        .axis path {
+            stroke: #666;
+        }
+
+        .legend-text {
+            font-size: 12px;
+            font-family: Arial;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="combinedChart"></div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        // 分开的两个数据集
+        const dataM = [
+            { month: 'Jan', value: 30 },
+            { month: 'Feb', value: 80 },
+            { month: 'Mar', value: 45 },
+            { month: 'Apr', value: 60 },
+            { month: 'May', value: 95 }
+        ];
+
+        const dataG = [
+            { month: 'Jan', value: 15 },
+            { month: 'Feb', value: 60 },
+            { month: 'Mar', value: 55 },
+            { month: 'Apr', value: 55 },
+            { month: 'May', value: 30 }
+        ];
+
+        // 图表配置
+        const config = {
+            width: 800,
+            height: 400,
+            margin: { top: 40, right: 40, bottom: 50, left: 50 }
+        };
+
+        // 创建SVG容器
+        const svg = d3.select("#combinedChart")
+            .append("svg")
+            .attr("width", config.width)
+            .attr("height", config.height);
+
+        // 创建主绘图区域
+        const chart = svg.append("g")
+            .attr("transform", `translate(${config.margin.left},${config.margin.top})`);
+
+        // 计算联合比例尺
+        const allValues = [...dataM.map(d => d.value), ...dataG.map(d => d.value)];
+        const xDomain = [...new Set([...dataM.map(d => d.month), ...dataG.map(d => d.month)])];
+
+        // 比例尺定义
+        const xScale = d3.scaleBand()
+            .domain(xDomain)
+            .range([0, config.width - config.margin.left - config.margin.right])
+            .padding(0.2);
+
+        const yScale = d3.scaleLinear()
+            .domain([0, d3.max(allValues)])
+            .range([config.height - config.margin.top - config.margin.bottom, 0]);
+
+        // 绘制柱状图（dataM）
+        chart.selectAll(".bar")
+            .data(dataM)
+            .join("rect")
+            .attr("class", "bar")
+            .attr("x", d => xScale(d.month))
+            .attr("y", d => yScale(d.value))
+            .attr("width", xScale.bandwidth())
+            .attr("height", d => yScale(0) - yScale(d.value));
+
+        // 绘制折线图（dataG）
+        const line = d3.line()
+            .x(d => xScale(d.month) + xScale.bandwidth() / 2)
+            .y(d => yScale(d.value));
+
+        chart.append("path")
+            .datum(dataG)
+            .attr("class", "line")
+            .attr("d", line);
+
+        // 添加X轴
+        svg.append("g")
+            .attr("transform", `translate(${config.margin.left},${config.height - config.margin.bottom})`)
+            .call(d3.axisBottom(xScale))
+            .selectAll("text")
+            .style("text-anchor", "middle");
+
+        // // 隐藏Y轴刻度（保留轴线）
+        // svg.append("g")
+        //     .attr("transform", `translate(${config.margin.left},0)`)
+        //     .call(d3.axisLeft(yScale)
+        //         .tickSize(0)
+        //         .tickFormat("")
+        //     )
+        //     .select(".domain")
+        //     .attr("stroke-width", 1.5);
+
+        // 添加图例
+        const legend = svg.append("g")
+            .attr("transform", `translate(${config.width - 180},20)`);
+
+        // 柱状图图例
+        legend.append("rect")
+            .attr("width", 20)
+            .attr("height", 15)
+            .attr("fill", "#4CAF50")
+            .attr("opacity", 0.6);
+
+        legend.append("text")
+            .attr("x", 25)
+            .attr("y", 12)
+            .text("DataM (Bar)")
+            .attr("class", "legend-text");
+
+        // 折线图图例
+        legend.append("path")
+            .attr("d", "M0,30 L20,30")
+            .attr("stroke", "#2196F3")
+            .attr("stroke-width", 3);
+
+        legend.append("text")
+            .attr("x", 25)
+            .attr("y", 32)
+            .text("DataG (Line)")
+            .attr("class", "legend-text");
+
+        // 添加数据标签
+        function addLabels(data, color) {
+            chart.selectAll(".label-" + color)
+                .data(data)
+                .join("text")
+                .attr("class", "data-label")
+                .attr("x", d => xScale(d.month) + xScale.bandwidth() / 2)
+                .attr("y", d => yScale(d.value) - 5)
+                .attr("text-anchor", "middle")
+                .style("fill", color)
+                .text(d => d.value);
+        }
+
+        addLabels(dataM, "#4CAF50"); // 柱状图标签
+        addLabels(dataG, "#2196F3"); // 折线图标签
+    </script>
+</body>
+
+</html>
