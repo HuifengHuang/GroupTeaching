@@ -5,42 +5,78 @@ import Vuex from 'vuex'
 // vuex也是vue的插件, 需要use一下, 进行插件的安装初始化
 Vue.use(Vuex)
 
-// 创建仓库 store
-const store = new Vuex.Store(
-    {
-        state: {
-            count: 1, // 要监控的值
-            overviewLayer: 0,
-            inter: {
-                start: 0,
-                end: 0,
-                startMe: 0,
-                endMe: 0,
-                KeyMe: 0,
-            },
-            groupOverview: 0,
-            groupDisData: [
-                //5-1
-                //总结，反对，支持，提问
-                { label: "A", values: [15, 10, 12, 10] },
-                { label: "B", values: [3, 10, 1, 7] },
-                { label: "C", values: [10, 10, 10, 20] },
-                { label: "D", values: [3, 10, 1, 16] },
-                { label: "E", values: [5, 5, 9, 16] },
-                // { label: 'w', values: [5, 5, 9, 16] },
-            ],
-            memberData: [
-                //5-1
-                { label: "A", values: [30, 20, 50, 30] },
-                { label: "B", values: [50, 8, 52, 58] },
-                { label: "C", values: [50, 0, 52, 58] },
-                { label: "D", values: [50, 8, 52, 58] },
-                { label: "E", values: [50, 0, 110] },
-            ], //每个人的讨论时间
-            groupTheme: [6, 7, 9, 3, 0]
+const store = new Vuex.Store({
+    state: {
+        Groups: {
+            group1: {
+                GroupID: 0,
+                GroupThemeSimilarity: 0,
+                GroupSpeechDuration: 0,
+                Members: {
+                    // Person1:{        成员格式
+                    //     AskDuration: 0,
+                    //     Replyuration: 0,
+                    // }
+                }
+            }
         },
+        CurrentGroup: 'group1',
+    },
+    mutations: {
+        INIT(state, nameList){
+            for(let i=0; i<nameList.length; i++){
+                const name = nameList[i];
+                state.Groups.group1.Members[name] = {
+                    AskDuration: 0,
+                    Replyuration: 0,
+                }
+            }
+        },
+        UPDATE_GROUP_THEME_SIMILARITY(state, value) {
+            state.Groups.group1.GroupThemeSimilarity = value;
+        },
+        UPDATE_GROUP_SPEECH_DURATION(state, value) {
+            state.Groups.group1.GroupSpeechDuration = value;
+        },
+        UPDATE_PERSON(state, payload) {
+            const { personName, askDuration, replyDuration } = payload;
+            if (state.Groups.group1.Members[personName]) {
+                state.Groups.group1.Members[personName].AskDuration = askDuration;
+                state.Groups.group1.Members[personName].Replyuration = replyDuration;
+            } else {
+                console.warn(`Person ${personName} does not exist in the group.`);
+            }
+        },
+    },
+    getters: {
+        getGroupAskDuration(state, group_name) {
+            let totalAskDuration = 0;
+            const group = state.Groups[group_name];
+            console.log(group);
+            if (group) {
+                for (const memberName in group.Members) {
+                    totalAskDuration += group.Members[memberName].AskDuration;
+                }
+            } else {
+                console.warn(`Group ${group_name} does not exist.`);
+            }
+            console.log(totalAskDuration);
+            return totalAskDuration;
+        },
+        getGroupReplyDuration(state, group_name) {
+            let totalReplyDuration = 0;
+            const group = state.Groups[group_name];
+            if (group) {
+                for (const memberName in group.Members) {
+                    totalReplyDuration += group.Members[memberName].ReplyDuration;
+                }
+            } else {
+                console.warn(`Group ${group_name} does not exist.`);
+            }
+            return totalReplyDuration;
+        }
     }
-)
+})
 
 // 导出仓库
-export default store
+export default store;

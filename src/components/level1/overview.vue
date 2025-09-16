@@ -26,39 +26,7 @@ export default {
     return {
       colorsGroup: ["#2c516e", "#4c956c", "#fefee3", "#ffc9b9", "#d68c45"], // 分层颜色
 
-      // groupDisData: [
-      //   //5-1
-      //   //总结，反对，支持，提问
-      //   { label: "A", values: [11, 11, 3, 2, 10] },
-      //   { label: "B", values: [3, 10, 1, 7] },
-      //   { label: "C", values: [1, 10, 10, 0] },
-      //   { label: "D", values: [3, 10, 1, 16] },
-      //   { label: "E", values: [5, 5, 9, 16] },
-      //   // { label: 'w', values: [5, 5, 9, 16] },
-      // ], //讨论互动模式
-
-      // // verticalData: [
-      // //   { label: "X", values: [20, 25, 30, 30, 35] }, //5-1
-      // // ], //讨论时间
-
       groupTheme: [2, 8, 4, 5, 3],
-
-      // memberData: [
-      //   //5-1
-      //   { label: "A", values: [45, 32, 10, 8, 37] },
-      //   { label: "B", values: [20, 18, 22, 28] },
-      //   { label: "C", values: [50, 0, 52, 58] },
-      //   { label: "D", values: [10, 40, 20, 58] },
-      //   { label: "E", values: [50, 0, 110] },
-      // ], //每个人的讨论时间
-
-      // grouptheme: [
-      //   { label: "A", values: [30, 20, 50, 30] },
-      //   { label: "B", values: [50, 8, 52, 58] },
-      //   { label: "C", values: [50, 0, 52, 58] },
-      //   { label: "D", values: [50, 8, 52, 58] },
-      //   { label: "E", values: [50, 0, 110] },
-      // ],
 
       //视图2
       groupDisData: [
@@ -71,8 +39,6 @@ export default {
         { label: "E", values: [5, 5, 9, 16] },
         // { label: 'w', values: [5, 5, 9, 16] },
       ], //讨论互动模式
-
-      // groupTheme: [3, 4, 2, 2, 5],
 
       memberData: [
         //5-1
@@ -113,20 +79,8 @@ export default {
       // colorPie: ["#E1BEE7", "#BBDEFB", "#C8E6C9", "#FFF9C4", "#FFCCBC"] // 柔和马卡龙色
     };
   },
-  async mounted() {
-    for (let i = 0; i < this.groupDisData.length; i++) {
-      const res = await api.getAllInterData({ test: i + 1 });
-      this.groupDisData[i].values = Object.values(res.message.individual);
-      this.$store.state.groupDisData[i].values = Object.values(
-        res.message.individual
-      );
-      const res2 = await api.getAllDisData({ test: i + 1 });
-      this.$store.state.memberData[i].values = Object.values(res2.message);
-      this.memberData[i].values = Object.values(res2.message);
-
-      this.$store.state.groupTheme[i] = this.groupTheme[i];
-    }
-    // console.log(this.$store.state.groupTheme);
+  mounted() {
+    this.initStore();
 
     this.initChart();
     this.initLegend();
@@ -137,6 +91,16 @@ export default {
     window.removeEventListener("resize", this.handleResize);
   },
   methods: {
+    initStore(){
+      this.$store.commit('INIT', ['kangziyao', 'huangpu']);
+      this.$store.commit('UPDATE_PERSON', { personName: 'kangziyao', askDuration: 20, replyDuration: 30 });
+      this.$store.commit('UPDATE_PERSON', { personName: 'huangpu', askDuration: 15, replyDuration: 25 });
+      const GroupAskDuration = this.$store.getters.getGroupAskDuration('group1');
+      const GroupReplyDuration = this.$store.getters.getGroupReplyDuration('group1');
+      console.log(this.$store.state.Groups);
+      console.log(GroupAskDuration);
+      console.log(GroupReplyDuration);
+    },
     initLegend() {
       // ============== 在tuli容器中添加图例 ==============
       const legendSvg = d3
@@ -186,20 +150,13 @@ export default {
         .attr("width", width)
         .attr("height", height);
 
-      // 分区比例
-      const headHeight = height * 0.1;
-      const bodyHeight = height * 0.7;
-      const tailHeight = height * 0.9;
-      const rectWidth = width * 0.1;
-
-      const heightZhexian = height * 0.2;
-
       this.createDonutChart(svg, width, height);
 
       // this.drawRectanglesBasedOnData(svg, horizontalWidth + verticalWidth, rectWidth, height)
     },
     createDonutChart(svg, width, height) {
-      const members = this.memberData; // 所有成员数据
+      // const members = this.memberData; // 所有成员数据
+      const members = this.$store.state.Groups;
       const numCols = 5; // 每行3个
       const chartWidth = width / numCols; // 每图宽度
       const length = this.memberData.length; //个数
@@ -221,8 +178,10 @@ export default {
         .attr("d", "M 0 0 L 10 5 L 0 10")
         .style("fill", "#666"); // 箭头填充颜色
 
-      members.forEach((member, index) => {
+      Object.entries(members).forEach(([key, value]) => {
         // 计算每个图表的位置
+        const Group = value;
+        const index = Group.GroupID;
         const row = Math.floor(index / numCols);
         const col = index % numCols;
         // ===== 动态中心坐标计算 =====
@@ -401,38 +360,6 @@ export default {
           .on("click", (event, d) => {
             this.$store.state.groupOverview = index;
           }); // 半透明红色填充
-
-        // // ===== 动态计算角度(反方向) =====
-        // // 数据范围 0~10 映射到角度 180°~0°（0指向上，10指向下）
-        // const angle3 = (1.5 + this.groupTheme[index] * 0.1) * Math.PI; // 转换为弧度
-
-        // // ===== 动态线段长度 =====
-        // const lineLength3 = innerRadius * 0.5; // 取内半径的80%
-
-        // // 计算终点坐标（考虑SVG坐标系Y轴向下）
-        // const lineEnd2 = {
-        //   x: centerX - lineLength2 * Math.cos(angle2),
-        //   y: centerY + lineLength2 * Math.sin(angle2),
-        // };
-
-        // // ===== 绘制线段 =====
-        // svg
-        //   .append("line")
-        //   .attr("x1", centerX)
-        //   .attr("y1", centerY)
-        //   .attr("x2", lineEnd2.x)
-        //   .attr("y2", lineEnd2.y)
-        //   .attr("stroke", "#ff6b6b")
-        //   .attr("stroke-width", 1.5)
-        //   .attr("marker-end", "url(#arrowhead)");
-        // // ========== 动态扇面绘制 ==========
-        // const themeangle2 = Math.PI * (this.groupTheme[index] / 10);
-        // const sector2 = d3
-        //   .arc()
-        //   .innerRadius(0) // 实心扇形
-        //   .outerRadius(innerRadius * 0.4) // 外径小于指针长度
-        //   .startAngle(0) // 固定基准角度（-90度指向上方）
-        //   .endAngle(-themeangle2); // 动态偏移角度
 
         // svg
         //   .append("path")
