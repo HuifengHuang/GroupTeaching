@@ -20,47 +20,7 @@ export default {
   },
   data() {
     return {
-      // groupName: ["Adam", "Bob", "Carl", "David"],
-      // groupName: ["Ella", "Leo", "Amy", "Max"],
-      // groupName: ["Aria", "Caleb", "Luna", "Jett", "Tom"],
       groupName: ["Nova", "Finn", "Zara", "Ethan", "Lila"],
-      // groupName: ["Eve", "Leo", "Max", "Kay", "Jay"],
-      // 案例1_2 讨论中期，4偏离,2不均,3变坏,5好一点
-      // groupDisData: [
-      //   //5-1
-      //   //总结，反对，支持，提问
-      //   { label: "A", values: [8, 10, 12] },
-      //   { label: "B", values: [12, 11, 14, 10] },
-      //   { label: "C", values: [11, 7, 6, 8, 9] },
-      //   { label: "D", values: [5, 6, 7, 11] },
-      //   { label: "E", values: [5, 5, 9, 6, 8] },
-      //   // { label: 'w', values: [5, 5, 9, 16] },
-      // ], //讨论互动模式
-      // groupDisData: [
-      //   //5-1
-      //   //总结，反对，支持，提问
-      //   { label: "A", values: [11, 11, 3, 2, 10] },
-      //   { label: "B", values: [3, 10, 1, 7] },
-      //   { label: "C", values: [1, 10, 10, 0] },
-      //   { label: "D", values: [3, 10, 1, 16] },
-      //   { label: "E", values: [5, 5, 9, 16] },
-      //   // { label: 'w', values: [5, 5, 9, 16] },
-      // ], //讨论互动模式
-
-      // verticalData: [
-      //   { label: "X", values: [20, 25, 30, 30, 35] }, //5-1
-      // ], //讨论时间
-
-      // groupTheme: [3, 2, 9, 8, 0],
-
-      // memberData: [
-      //   //5-1
-      //   { label: "A", values: [45, 32, 10, 8, 37] },
-      //   { label: "B", values: [20, 18, 22, 28] },
-      //   { label: "C", values: [50, 0, 52, 58] },
-      //   { label: "D", values: [10, 40, 20, 58] },
-      //   { label: "E", values: [50, 0, 110] },
-      // ], //每个人的讨论时间
 
       //视图2
       groupDisData: [
@@ -142,8 +102,12 @@ export default {
 
       const legend = legendSvg.append("g").attr("transform", "translate(0,0)"); // 图例组偏移
 
-      for (let i = 0; i < this.groupName.length; i++) {
-        let text = this.groupName[i];
+      const MembersAskDuration = this.$store.getters.getMembersAskDurationMap('group1');
+      const MembersReplyDuration = this.$store.getters.getMembersReplyDurationMap('group1');
+      const MembersName = Object.keys(MembersAskDuration);
+      console.log(MembersName);
+      for (let i = 0; i < MembersName.length; i++) {
+        let text = MembersName[i];
         let group = i;
         legend
           .append("rect")
@@ -167,37 +131,6 @@ export default {
           .style("fill", "#7F7F7F")
           .style("dominant-baseline", "middle");
       }
-      // // ============== 新增时间区间显示 ==============   5月30日讨论去除时间区间显示
-      // legendSvg
-      //   .append("text")
-      //   .attr("x", 0) // 水平居中
-      //   .attr("y", height - 55) // 定位在图例下方
-      //   // .attr("text-anchor", "middle") // 文字居中对齐
-      //   .text(`时间区间:`)
-      //   .style("font-size", "12px")
-      //   .style("font-family", "MingLiU")
-      //   .style("fill", "#666")
-      //   .style("dominant-baseline", "middle");
-      // legendSvg
-      //   .append("text")
-      //   .attr("x", 0) // 水平居中
-      //   .attr("y", height - 40) // 定位在图例下方
-      //   // .attr("text-anchor", "middle") // 文字居中对齐
-      //   .text(`${this.startDate}`)
-      //   .style("font-size", "12px")
-      //   .style("font-family", "MingLiU")
-      //   .style("fill", "#666")
-      //   .style("dominant-baseline", "middle");
-      // legendSvg
-      //   .append("text")
-      //   .attr("x", 0) // 水平居中
-      //   .attr("y", height - 25) // 定位在图例下方
-      //   // .attr("text-anchor", "middle") // 文字居中对齐
-      //   .text(`~${this.endDate}`)
-      //   .style("font-size", "12px")
-      //   .style("font-family", "MingLiU")
-      //   .style("fill", "#666")
-      //   .style("dominant-baseline", "middle");
     },
     initChart() {
       const container = this.$refs.container2;
@@ -230,9 +163,7 @@ export default {
       // this.drawRectanglesBasedOnData(svg, horizontalWidth + verticalWidth, rectWidth, height)
     },
     createDonutChart(svg, width, height) {
-      const members = this.memberData; // 所有成员数据
       const chartWidth = width; // 每图宽度
-      const length = this.memberData.length; //个数
       const chartHeight = height; // 行高度
 
       // 在循环外统一定义箭头（仅执行一次）
@@ -250,15 +181,12 @@ export default {
         .attr("d", "M 0 0 L 10 5 L 0 10")
         .style("fill", "#666"); // 箭头填充颜色
 
-      const index = this.$store.state.groupOverview;
-      const member = this.$store.state.memberData[index];
-      const theme = this.$store.state.groupTheme[index];
-      const innerValues = this.$store.state.groupDisData[index].values;
+      const index = this.$store.getters.getCurrentGroup;
+      const MembersAskDuration = this.$store.getters.getMembersAskDurationMap('group1');
+      const MembersReplyDuration = this.$store.getters.getMembersReplyDurationMap('group1');
+      const GroupThemeSimilarity = this.$store.getters.getGroupThemeSimilarity('group1');
 
-      // const index = 1;
-      // const member = this.memberData[index];
-      // const theme = this.groupTheme[index];
-      // const innerValues = this.groupDisData[index].values;
+
       // ===== 动态中心坐标计算 =====
       const centerX = chartWidth / 2; // 水平居中
       const centerY = chartHeight / 2; // 垂直居中
@@ -267,10 +195,9 @@ export default {
       const containerSize = Math.min(chartWidth, chartHeight); // 取宽高中较小值
       const outerRadius = containerSize * 0.5; // 外层半径占可用空间的35%
       const innerRadius = outerRadius * 0.7; // 内层为外层的70%
-      const circleRadius = outerRadius * 0.4; // 内圆为外层的40%
 
       // ========== 内层饼图（使用成员values的前半部分） ==========
-
+      const innerValues = Object.values(MembersAskDuration);
       // const innerRadius = chartWidth / 4;
       // 创建阈值判断函数
       const getSliceColorIn = (d, index) => {
@@ -287,10 +214,7 @@ export default {
         .endAngle(dynamicInnerAngle)
         .value((d) => d)
         .sort(null);
-      // const innerPie = d3
-      //   .pie()
-      //   .value((d) => d)
-      //   .sort(null);
+
       const innerArc = d3
         .arc()
         .innerRadius(innerRadius * 0.7)
@@ -304,13 +228,13 @@ export default {
         .attr("class", `inner-slice-${index}`)
         .attr("d", innerArc)
         .attr("fill", (d, i) => this.colorDis[i % this.colorDis.length])
-        .attr("stroke", function (d, i) {
-          return getSliceColorIn(d, i);
-        })
+        // .attr("stroke", function (d, i) {
+        //   return getSliceColorIn(d, i);
+        // })
         .attr("transform", `translate(${centerX},${centerY})`);
 
       // ========== 外层饼图（使用成员values的后半部分） ==========
-      const outerValues = member.values;
+      const outerValues = Object.values(MembersReplyDuration);
       // const outerRadius = chartWidth / 3;
       const totalOuterValue = d3.sum(outerValues);
       const dynamicAngle = (totalOuterValue / 180) * 2 * Math.PI; // 根据总和动态计算角度
@@ -341,30 +265,10 @@ export default {
         .attr("class", `outer-slice-${index}`)
         .attr("d", outerArc)
         .attr("fill", (d, i) => this.colorDis[i % this.colorDis.length])
-        .attr("stroke", function (d, i) {
-          return getSliceColor(d, i);
-        })
+        // .attr("stroke", function (d, i) {
+        //   return getSliceColor(d, i);
+        // })
         .attr("transform", `translate(${centerX},${centerY})`);
-
-      // ========== 添加主题中心圆 ==========
-      // const circleValues = this.grouptheme[index].values;
-
-      // const circlePie = d3
-      //   .pie()
-      //   .value((d) => d)
-      //   .sort(null);
-
-      // const circleArc = d3.arc().innerRadius(0).outerRadius(circleRadius);
-
-      // svg
-      //   .selectAll(`.inner-circle-${index}`)
-      //   .data(circlePie(circleValues))
-      //   .enter()
-      //   .append("path")
-      //   .attr("class", `inner-circle-${index}`)
-      //   .attr("d", circleArc)
-      //   .attr("fill", (d, i) => this.colors[i % this.colors.length])
-      //   .attr("transform", `translate(${centerX},${centerY})`);
 
       // ========== 添加中心箭头线 ==========
       const lineLength = innerRadius * 0.6; // 线段长度等于外层半径
@@ -392,7 +296,7 @@ export default {
 
       // ===== 动态计算角度 =====
       // 数据范围 0~10 映射到角度 180°~0°（0指向上，10指向下）
-      const angle2 = (1.5 + theme * 0.1) * Math.PI; // 转换为弧度
+      const angle2 = (1.5 + GroupThemeSimilarity * 0.1) * Math.PI; // 转换为弧度
 
       // ===== 动态线段长度 =====
       const lineLength2 = innerRadius * 0.5; // 取内半径的80%
@@ -413,58 +317,6 @@ export default {
         .attr("stroke", "#ff6b6b")
         .attr("stroke-width", 1.5)
         .attr("marker-end", "url(#arrowhead)");
-      // // ========== 动态扇面绘制 ==========  5月30日讨论删除内扇面
-      // const themeangle = Math.PI * (theme / 10);
-      // const sector = d3
-      //   .arc()
-      //   .innerRadius(0) // 实心扇形
-      //   .outerRadius(innerRadius * 0.4) // 外径小于指针长度
-      //   .startAngle(0) // 固定基准角度（-90度指向上方）
-      //   .endAngle(themeangle); // 动态偏移角度
-
-      // svg
-      //   .append("path")
-      //   .attr("d", sector)
-      //   .attr("transform", `translate(${centerX},${centerY})`)
-      //   .attr("fill", "rgba(255,107,107)"); // 半透明红色填充
-
-      // // ===== 动态计算角度(反方向) =====
-      // // 数据范围 0~10 映射到角度 180°~0°（0指向上，10指向下）
-      // const angle3 = (1.5 + this.groupTheme[index - 1] * 0.1) * Math.PI; // 转换为弧度
-
-      // // ===== 动态线段长度 =====
-      // const lineLength3 = innerRadius * 0.5; // 取内半径的80%
-
-      // // 计算终点坐标（考虑SVG坐标系Y轴向下）
-      // const lineEnd2 = {
-      //   x: centerX - lineLength2 * Math.cos(angle3),
-      //   y: centerY + lineLength2 * Math.sin(angle3),
-      // };
-
-      // // ===== 绘制线段 =====
-      // svg
-      //   .append("line")
-      //   .attr("x1", centerX)
-      //   .attr("y1", centerY)
-      //   .attr("x2", lineEnd2.x)
-      //   .attr("y2", lineEnd2.y)
-      //   .attr("stroke", "#ff6b6b")
-      //   .attr("stroke-width", 1.5)
-      //   .attr("marker-end", "url(#arrowhead)");
-      // // ========== 动态扇面绘制 ==========
-      // const themeangle2 = Math.PI * (this.groupTheme[index - 1] / 10);
-      // const sector2 = d3
-      //   .arc()
-      //   .innerRadius(0) // 实心扇形
-      //   .outerRadius(innerRadius * 0.4) // 外径小于指针长度
-      //   .startAngle(0) // 固定基准角度（-90度指向上方）
-      //   .endAngle(-themeangle2); // 动态偏移角度
-
-      // svg
-      //   .append("path")
-      //   .attr("d", sector2)
-      //   .attr("transform", `translate(${centerX},${centerY})`)
-      //   .attr("fill", "rgba(246,172,15)"); // 半透明红色填充
     },
 
     handleResize() {

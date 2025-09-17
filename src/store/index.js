@@ -10,7 +10,7 @@ const store = new Vuex.Store({
         Groups: {
             group1: {
                 GroupID: 0,
-                GroupThemeSimilarity: 0,
+                GroupThemeSimilarity: 3,
                 GroupSpeechDuration: 0,
                 Members: {
                     // Person1:{        成员格式
@@ -28,7 +28,7 @@ const store = new Vuex.Store({
                 const name = nameList[i];
                 state.Groups.group1.Members[name] = {
                     AskDuration: 0,
-                    Replyuration: 0,
+                    ReplyDuration: 0,
                 }
             }
         },
@@ -42,38 +42,47 @@ const store = new Vuex.Store({
             const { personName, askDuration, replyDuration } = payload;
             if (state.Groups.group1.Members[personName]) {
                 state.Groups.group1.Members[personName].AskDuration = askDuration;
-                state.Groups.group1.Members[personName].Replyuration = replyDuration;
+                state.Groups.group1.Members[personName].ReplyDuration = replyDuration;
             } else {
                 console.warn(`Person ${personName} does not exist in the group.`);
             }
         },
     },
     getters: {
-        getGroupAskDuration(state, group_name) {
-            let totalAskDuration = 0;
+        getMembersAskDurationMap:(state) => (group_name) => {
+            let askDurationMap = {};
             const group = state.Groups[group_name];
-            console.log(group);
             if (group) {
                 for (const memberName in group.Members) {
-                    totalAskDuration += group.Members[memberName].AskDuration;
+                    askDurationMap[memberName] = group.Members[memberName].AskDuration;
                 }
             } else {
                 console.warn(`Group ${group_name} does not exist.`);
             }
-            console.log(totalAskDuration);
-            return totalAskDuration;
+            return askDurationMap;
         },
-        getGroupReplyDuration(state, group_name) {
-            let totalReplyDuration = 0;
+        getMembersReplyDurationMap:(state) => (group_name) => {
+            let replyDurationMap = {};
             const group = state.Groups[group_name];
             if (group) {
                 for (const memberName in group.Members) {
-                    totalReplyDuration += group.Members[memberName].ReplyDuration;
+                    replyDurationMap[memberName] = group.Members[memberName].ReplyDuration;
                 }
             } else {
                 console.warn(`Group ${group_name} does not exist.`);
             }
-            return totalReplyDuration;
+            return replyDurationMap;
+        },
+        getGroupThemeSimilarity: (state) => (group_name) => {
+            const group = state.Groups[group_name];
+            return group ? group.GroupThemeSimilarity : null;
+        },
+        getGroupSpeechDuration: (state) => (group_name) => {
+            const group = state.Groups[group_name];
+            return group ? group.GroupSpeechDuration : null;
+        },
+        getCurrentGroup: (state) => {
+            return state.CurrentGroup;
         }
     }
 })

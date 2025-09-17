@@ -95,11 +95,6 @@ export default {
       this.$store.commit('INIT', ['kangziyao', 'huangpu']);
       this.$store.commit('UPDATE_PERSON', { personName: 'kangziyao', askDuration: 20, replyDuration: 30 });
       this.$store.commit('UPDATE_PERSON', { personName: 'huangpu', askDuration: 15, replyDuration: 25 });
-      const GroupAskDuration = this.$store.getters.getGroupAskDuration('group1');
-      const GroupReplyDuration = this.$store.getters.getGroupReplyDuration('group1');
-      console.log(this.$store.state.Groups);
-      console.log(GroupAskDuration);
-      console.log(GroupReplyDuration);
     },
     initLegend() {
       // ============== 在tuli容器中添加图例 ==============
@@ -195,10 +190,10 @@ export default {
         const circleRadius = outerRadius * 0.4; // 内圆为外层的40%
 
         // ========== 内层饼图（使用成员values的前半部分） ==========
-        const innerValues = this.groupDisData[index].values;
+        const innerValues = this.$store.getters.getMembersAskDurationMap('group1');
         // const innerRadius = chartWidth / 4;
 
-        const totalInnerValue = d3.sum(innerValues);
+        const totalInnerValue = d3.sum(Object.values(innerValues));
         const dynamicInnerAngle = (totalInnerValue / 50) * 2 * Math.PI; // 根据总和动态计算角度
 
         const innerPie = d3
@@ -218,7 +213,7 @@ export default {
 
         svg
           .selectAll(`.inner-slice-${index}`)
-          .data(innerPie(innerValues))
+          .data(innerPie(Object.values(innerValues)))
           .enter()
           .append("path")
           .attr("class", `inner-slice-${index}`)
@@ -226,13 +221,13 @@ export default {
           .attr("fill", (d, i) => this.colorDis[i % this.colorDis.length])
           .attr("transform", `translate(${centerX},${centerY})`) // 添加点击事件
           .on("click", (event, d) => {
-            this.$store.state.groupOverview = index;
+            this.$store.state.CurrentGroup = index;
           });
 
         // ========== 外层饼图（使用成员values的后半部分） ==========
-        const outerValues = member.values;
+        const outerValues = this.$store.getters.getMembersReplyDurationMap('group1');
         // const outerRadius = chartWidth / 3;
-        const totalOuterValue = d3.sum(outerValues);
+        const totalOuterValue = d3.sum(Object.values(outerValues));
         const dynamicAngle = (totalOuterValue / 180) * 2 * Math.PI; // 根据总和动态计算角度
 
         const outerPie = d3
@@ -249,7 +244,7 @@ export default {
 
         svg
           .selectAll(`.outer-slice-${index}`)
-          .data(outerPie(outerValues))
+          .data(outerPie(Object.values(outerValues)))
           .enter()
           .append("path")
           .attr("class", `outer-slice-${index}`)
@@ -259,26 +254,6 @@ export default {
           .on("click", (event, d) => {
             this.$store.state.groupOverview = index;
           });
-
-        // ========== 添加主题中心圆 ==========
-        // const circleValues = this.grouptheme[index].values;
-
-        // const circlePie = d3
-        //   .pie()
-        //   .value((d) => d)
-        //   .sort(null);
-
-        // const circleArc = d3.arc().innerRadius(0).outerRadius(circleRadius);
-
-        // svg
-        //   .selectAll(`.inner-circle-${index}`)
-        //   .data(circlePie(circleValues))
-        //   .enter()
-        //   .append("path")
-        //   .attr("class", `inner-circle-${index}`)
-        //   .attr("d", circleArc)
-        //   .attr("fill", (d, i) => this.colors[i % this.colors.length])
-        //   .attr("transform", `translate(${centerX},${centerY})`);
 
         // ========== 添加中心箭头线 ==========
         const lineLength = innerRadius * 0.6; // 线段长度等于外层半径
@@ -306,7 +281,7 @@ export default {
 
         // ===== 动态计算角度 =====
         // 数据范围 0~10 映射到角度 180°~0°（0指向上，10指向下）
-        const angle2 = (1.5 + this.groupTheme[index] * 0.1) * Math.PI; // 转换为弧度
+        const angle2 = (1.5 + this.$store.getters.getGroupThemeSimilarity('group1') * 0.1) * Math.PI; // 转换为弧度
 
         // ===== 动态线段长度 =====
         const lineLength2 = innerRadius * 0.5; // 取内半径的80%
@@ -327,39 +302,6 @@ export default {
           .attr("stroke", "#ff6b6b")
           .attr("stroke-width", 1.5)
           .attr("marker-end", "url(#arrowhead)");
-        // ========== 动态扇面绘制 ==========
-        const themeangle = Math.PI * (this.groupTheme[index] / 10);
-        const sector = d3
-          .arc()
-          .innerRadius(0) // 实心扇形
-          .outerRadius(innerRadius * 0.4) // 外径小于指针长度
-          .startAngle(0) // 固定基准角度（-90度指向上方）
-          .endAngle(themeangle); // 动态偏移角度
-
-        svg
-          .append("path")
-          .attr("d", sector)
-          .attr("transform", `translate(${centerX},${centerY})`)
-          .attr("fill", "rgba(255,107,107)")
-          .on("click", (event, d) => {
-            this.$store.state.groupOverview = index;
-          }); // 半透明红色填充
-
-        const sector2 = d3
-          .arc()
-          .innerRadius(0) // 实心扇形
-          .outerRadius(innerRadius * 0.4) // 外径小于指针长度
-          .startAngle(0) // 固定基准角度（-90度指向上方）
-          .endAngle(2 * Math.PI); // 动态偏移角度
-
-        svg
-          .append("path")
-          .attr("d", sector2)
-          .attr("transform", `translate(${centerX},${centerY})`)
-          .attr("fill", "transparent")
-          .on("click", (event, d) => {
-            this.$store.state.groupOverview = index;
-          }); // 半透明红色填充
 
         // svg
         //   .append("path")
