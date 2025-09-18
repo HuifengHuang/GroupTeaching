@@ -8,13 +8,15 @@ from statement_manager import statement_manager
 
 
 def recognition(file_path, times):
-    text = speech_recognition(file_path)
-    if text == '':
+    # 语音识别
+    speech_text = speech_recognition(file_path)
+    if speech_text == '':
         print('there is no voice')
         return
+    # 说话人识别
     speaker, score = req_url('search feature', group_id='home', file_path=file_path)
-    print('====*Recognition*====', times, ':', speaker, ':', text)
-    statement_manager.add_statements(times + '&' + speaker + '&' + text)
+    print('====*Recognition*====', times, ':', speaker, ':', speech_text)
+    statement_manager.add_statements(times + '&' + speaker + '&' + speech_text)
 
 
 def clear_folder(folder_path):

@@ -2,7 +2,7 @@ import json
 import requests
 import re
 from statement_keeper import add_statement
-
+from theme_similarity_recognition import ThemeModel
 
 
 """
@@ -121,8 +121,10 @@ def interaction_recognition(formatted_text, raw_statement):
     text = get_answer(questions)
     print(text)
     reply_objects = parse_reply_objects(text)
+    model = ThemeModel()
     for i, (raw_text, reply_obj) in enumerate(zip(raw_statement, reply_objects)):
-        add_statement(raw_text + '&' + reply_obj)
+        similarity = model.theme_similarity_recognition(raw_text.split('&')[2])
+        add_statement(raw_text + '&' + reply_obj + '&' + similarity)
     print(reply_objects)
 
 

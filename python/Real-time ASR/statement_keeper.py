@@ -29,11 +29,13 @@ def add_statement(content: str):
     speaker = split_content[1]
     content = split_content[2]
     reply_object = split_content[3]
+    similarity = split_content[4]
     log_entry = {
         "timestamp": datetime.strptime(times, "%H:%M:%S").time().isoformat(),
         "speaker": speaker,
         "content": content,
-        "reply_object": reply_object
+        "reply_object": reply_object,
+        "similarity": similarity
     }
 
     log_file = get_log_file_path(timestamp)
