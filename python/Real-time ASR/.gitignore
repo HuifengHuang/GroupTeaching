@@ -1,0 +1,5 @@
+/Recording*
+/segment_recording*
+/Statement*
+*.pyc
+*.wav
